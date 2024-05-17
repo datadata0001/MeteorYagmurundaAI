@@ -178,6 +178,7 @@ class DQLAgent:
         state = np.array(state)
         if np.random.rand() <= self.epsilon:
             return random.randrange(self.action_size)
+        else:    
         act_values = self.model.predict(state,verbose = 0)
         return np.argmax(act_values[0])
         
