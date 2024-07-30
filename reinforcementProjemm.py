@@ -18,9 +18,9 @@ import random
 
 #window size
 
-WIDTH = 360
+WIDTH = 480
 HEIGHT = 360
-FPS = 500
+FPS = 144
 
 WHITE = (255,255,255)
 BLACK = (0,0,0)
@@ -49,14 +49,15 @@ class Player(pygame.sprite.Sprite):
         keystate = pygame.key.get_pressed()
         
         if keystate[pygame.K_LEFT] or action == 0:
-            self.speedx = -20
+            self.speedx = -5
         elif keystate[pygame.K_RIGHT] or action == 1:
-            self.speedx = 20
+            self.speedx = 5
         elif keystate[pygame.K_DOWN] or action == 2:
-            self.speedy = -20
+            self.speedy = -5
         elif keystate[pygame.K_UP] or action == 3:
-            self.speedy = 20
+            self.speedy = 5
             
+
         else:
             self.speedx == 0
             
@@ -86,13 +87,13 @@ class Enemy(pygame.sprite.Sprite):
         self.image = pygame.Surface((10,10))
         self.image.fill(RED)
         self.rect = self.image.get_rect()
-        self.radius = 10
+        self.radius = 5
         pygame.draw.circle(self.image, RED, self.rect.center, self.radius)
-        self.rect.x = random.randrange(0, WIDTH - self.rect.width)
-        self.rect.y = random.randrange(0, HEIGHT - self.rect.height)
+        self.rect.x = random.randrange(0,WIDTH - self.rect.width)
+        self.rect.y = random.randrange(2,6)
         
-        self.speedx = 10
-        self.speedy = 10
+        self.speedx = 0
+        self.speedy = 7
         
         
     def update(self):
@@ -100,15 +101,70 @@ class Enemy(pygame.sprite.Sprite):
         self.rect.x += self.speedx
         self.rect.y += self.speedy
         
-        if self.rect.top > HEIGHT + 10:
-            self.rect.x = random.randrange(0, WIDTH - self.rect.width)
-            self.rect.y = random.randrange(2,6)
-            self.speedy = 10
-            
-    def getCoordinates(self):
-        return(self.rect.x, self.rect.y)            
-            
+    
+        if self.rect.top > HEIGHT + 1:
+             self.rect.x = random.randrange(0,WIDTH - self.rect.width) # Merkezden aldığımızdan ekrana sığdırma yöntemidir. Çerçevenin dışından gelemeyecek.
+             self.rect.y = random.randrange(2,6)
+             self.speedy = 7
 
+
+
+
+    def getCoordinates(self):
+        return(self.rect.x, self.rect.y)       
+
+
+class SecEnemy(pygame.sprite.Sprite):
+    
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.Surface((10,10))
+        self.image.fill(BLUE)
+        self.rect = self.image.get_rect()
+        self.radius = 5
+        pygame.draw.circle(self.image, BLUE, self.rect.center, self.radius)
+        self.rect.x = random.randrange(0, 360)
+        self.rect.y = random.randrange(0,HEIGHT)
+        
+        self.speedx = 7
+        self.speedy = 7
+        
+        
+    def update(self):
+        
+        self.rect.x += self.speedx
+        self.rect.y += self.speedy
+        
+
+
+        # Sağ duvara çarptığında hızını tersine çevir            
+        if self.rect.right > WIDTH:
+            self.rect.right = WIDTH
+            self.speedx = -self.speedx
+            
+        # Sol duvara çarptığında hızını tersine çevir            
+        if self.rect.left < 0:
+            self.rect.left = 0
+            self.speedx = -self.speedx 
+        
+        # Üst duvara çarptığında hızını tersine çevir
+        if self.rect.top < 0:
+            self.rect.top = 0
+            self.speedy = -self.speedy 
+            
+        # Alt duvara çarptığında hızını tersine çevir
+        if self.rect.bottom > HEIGHT:
+            self.rect.bottom = HEIGHT
+            self.speedy = -self.speedy 
+
+
+    def getCoordinates(self):
+        return(self.rect.x, self.rect.y)       
+
+                
+
+
+        
 class Point(pygame.sprite.Sprite):
     
     def __init__(self):
@@ -120,27 +176,47 @@ class Point(pygame.sprite.Sprite):
         pygame.draw.circle(self.image, GREEN, self.rect.center, self.radius)
         self.rect.x = random.randrange(0, WIDTH - self.rect.width)
         self.rect.y = random.randrange(0, HEIGHT - self.rect.height)
-        self.speedx = 0
-        self.speedy = 0
+        self.speedx = 12
+        self.speedy = 12
         
     def update(self):
+        
         self.rect.x += self.speedx
         self.rect.y += self.speedy
         
-        if self.rect.top > HEIGHT + 10:
-            self.rect.x = random.randrange(0, WIDTH - self.rect.width)
-            self.rect.y = random.randrange(2,6)
-            self.speedy = 0
-
+            
+                        
+        # Sağ duvara çarptığında hızını tersine çevir            
+        if self.rect.right > WIDTH:
+            self.rect.right = WIDTH
+            self.speedx = -self.speedx
+            
+        # Sol duvara çarptığında hızını tersine çevir            
+        if self.rect.left < 0:
+            self.rect.left = 0
+            self.speedx = -self.speedx 
+        
+        # Üst duvara çarptığında hızını tersine çevir
+        if self.rect.top < 0:
+            self.rect.top = 0
+            self.speedy = -self.speedy 
+            
+        # Alt duvara çarptığında hızını tersine çevir
+        if self.rect.bottom > HEIGHT/2:
+            self.rect.bottom = HEIGHT/2
+            self.speedy = -self.speedy 
+            
     def getCoordinates(self):
         return(self.rect.x, self.rect.y)         
 
-        
+
+
+
             
 class DQLAgent:
     def __init__(self):
         #parameter
-        self.state_size = 12 #distance
+        self.state_size = 20 #distance
         self.action_size = 5 #right, left ,up, down, none
         
         self.gamma = 0.95
@@ -150,7 +226,7 @@ class DQLAgent:
         self.epsilon_decay = 0.995
         self.epsilon_min = 0.01
         
-        self.memory = deque(maxlen = 10000000)
+        self.memory = deque(maxlen = 100000)
         
         self.model = self.build_model()
         
@@ -178,9 +254,9 @@ class DQLAgent:
         state = np.array(state)
         if np.random.rand() <= self.epsilon:
             return random.randrange(self.action_size)
-        else:    
-        act_values = self.model.predict(state,verbose = 0)
-        return np.argmax(act_values[0])
+        else:
+            act_values = self.model.predict(state,verbose = 0)
+            return np.argmax(act_values[0])
         
     
     def replay(self,batch_size):
@@ -221,19 +297,43 @@ class Env(pygame.sprite.Sprite):
         self.m3 = Enemy()
         self.m4 = Enemy()
         self.m5 = Enemy()
+        self.m6 = SecEnemy()
+        self.m7 = SecEnemy()
+        self.m8 = SecEnemy()
+        self.m9 = SecEnemy()
+        self.m10 = SecEnemy()
         self.all_sprite.add(self.m1)
         self.all_sprite.add(self.m2)
         self.all_sprite.add(self.m3)
         self.all_sprite.add(self.m4)
         self.all_sprite.add(self.m5)
+        self.all_sprite.add(self.m6)
+        self.all_sprite.add(self.m7)
+        self.all_sprite.add(self.m8)
+        self.all_sprite.add(self.m9)
+        self.all_sprite.add(self.m10)
         self.enemy.add(self.m1)
         self.enemy.add(self.m2)
         self.enemy.add(self.m3)
         self.enemy.add(self.m4)
         self.enemy.add(self.m5)
+        self.enemy.add(self.m6)
+        self.enemy.add(self.m7)
+        self.enemy.add(self.m8)
+        self.enemy.add(self.m9)
+        self.enemy.add(self.m10)
+        '''
         self.point = Point()
+        self.point2 = Point()
+        self.point3 = Point()
         self.all_sprite.add(self.point)
+        self.all_sprite.add(self.point2)
+        self.all_sprite.add(self.point3)
         self.points.add(self.point)
+        self.points.add(self.point2)
+        self.points.add(self.point3)
+        '''
+
         
         
         self.reward = 0 
@@ -246,22 +346,34 @@ class Env(pygame.sprite.Sprite):
         d = a-b
         return d
     
+
     def step(self,action):
         state_list = []
         
         #updates
         self.player.update(action)
         self.enemy.update()
+        self.points.update()
         
         #get cordinates
         next_player_state = self.player.getCoordinates()
+        
         next_m1_state = self.m1.getCoordinates()
         next_m2_state = self.m2.getCoordinates()
         next_m3_state = self.m3.getCoordinates()
         next_m4_state = self.m4.getCoordinates()
         next_m5_state = self.m5.getCoordinates()
+        next_m6_state = self.m6.getCoordinates()
+        next_m7_state = self.m7.getCoordinates()
+        next_m8_state = self.m8.getCoordinates()
+        next_m9_state = self.m9.getCoordinates()
+        next_m10_state = self.m10.getCoordinates()
+        
+        '''
         next_point_state = self.point.getCoordinates()
-
+        next_point2_state = self.point2.getCoordinates()
+        next_point3_state = self.point3.getCoordinates()
+        '''
         
 
 
@@ -277,8 +389,24 @@ class Env(pygame.sprite.Sprite):
         state_list.append(self.findDistance(next_player_state[1], next_m4_state[1]))
         state_list.append(self.findDistance(next_player_state[0], next_m5_state[0]))
         state_list.append(self.findDistance(next_player_state[1], next_m5_state[1]))
+        state_list.append(self.findDistance(next_player_state[0], next_m6_state[0]))
+        state_list.append(self.findDistance(next_player_state[1], next_m6_state[1]))
+        state_list.append(self.findDistance(next_player_state[0], next_m7_state[0]))
+        state_list.append(self.findDistance(next_player_state[1], next_m7_state[1]))
+        state_list.append(self.findDistance(next_player_state[0], next_m8_state[0]))
+        state_list.append(self.findDistance(next_player_state[1], next_m8_state[1]))
+        state_list.append(self.findDistance(next_player_state[0], next_m9_state[0]))
+        state_list.append(self.findDistance(next_player_state[1], next_m9_state[1]))
+        state_list.append(self.findDistance(next_player_state[0], next_m10_state[0]))
+        state_list.append(self.findDistance(next_player_state[1], next_m10_state[1]))
+        '''
         state_list.append(self.findDistance(next_player_state[0], next_point_state[0]))
         state_list.append(self.findDistance(next_player_state[1], next_point_state[1]))
+        state_list.append(self.findDistance(next_player_state[0], next_point2_state[0]))
+        state_list.append(self.findDistance(next_player_state[1], next_point2_state[1]))
+        state_list.append(self.findDistance(next_player_state[0], next_point3_state[0]))
+        state_list.append(self.findDistance(next_player_state[1], next_point3_state[1]))
+        '''
 
 
         
@@ -297,20 +425,45 @@ class Env(pygame.sprite.Sprite):
         self.m3 = Enemy()
         self.m4 = Enemy()
         self.m5 = Enemy()
+        self.m6 = SecEnemy()
+        self.m7 = SecEnemy()
+        self.m8 = SecEnemy()
+        self.m9 = SecEnemy()
+        self.m10 = SecEnemy()
         self.all_sprite.add(self.m1)
         self.all_sprite.add(self.m2)
         self.all_sprite.add(self.m3)
         self.all_sprite.add(self.m4)
         self.all_sprite.add(self.m5)
+        self.all_sprite.add(self.m6)
+        self.all_sprite.add(self.m7)
+        self.all_sprite.add(self.m8)
+        self.all_sprite.add(self.m9)
+        self.all_sprite.add(self.m10)
         self.enemy.add(self.m1)
         self.enemy.add(self.m2)
         self.enemy.add(self.m3)
         self.enemy.add(self.m4)
         self.enemy.add(self.m5)
+        self.enemy.add(self.m6)
+        self.enemy.add(self.m7)
+        self.enemy.add(self.m8)
+        self.enemy.add(self.m9)
+        self.enemy.add(self.m10)
+        '''
         self.point = Point()
+        self.point2 = Point()
+        self.point3 = Point()
         self.all_sprite.add(self.point)
+        self.all_sprite.add(self.point2)
+        self.all_sprite.add(self.point3)
         self.points.add(self.point)
+        self.points.add(self.point2)
+        self.points.add(self.point3)
+        '''
+
         
+
         
         self.reward = 0 
         self.total_reward = 0 
@@ -325,8 +478,19 @@ class Env(pygame.sprite.Sprite):
         m3_state = self.m3.getCoordinates()
         m4_state = self.m4.getCoordinates()
         m5_state = self.m5.getCoordinates()
+        m6_state = self.m6.getCoordinates()
+        m7_state = self.m7.getCoordinates()
+        m8_state = self.m8.getCoordinates()
+        m9_state = self.m9.getCoordinates()
+        m10_state = self.m10.getCoordinates()
+        '''
         point_state = self.point.getCoordinates()
+        point2_state = self.point2.getCoordinates()
+        point3_state = self.point3.getCoordinates()
+        '''
+
         
+
         
         
         # find distance                
@@ -340,9 +504,24 @@ class Env(pygame.sprite.Sprite):
         state_list.append(self.findDistance(player_state[1], m4_state[1]))
         state_list.append(self.findDistance(player_state[0], m5_state[0]))
         state_list.append(self.findDistance(player_state[1], m5_state[1]))
+        state_list.append(self.findDistance(player_state[0], m6_state[0]))
+        state_list.append(self.findDistance(player_state[1], m6_state[1]))
+        state_list.append(self.findDistance(player_state[0], m7_state[0]))
+        state_list.append(self.findDistance(player_state[1], m7_state[1]))
+        state_list.append(self.findDistance(player_state[0], m8_state[0]))
+        state_list.append(self.findDistance(player_state[1], m8_state[1]))
+        state_list.append(self.findDistance(player_state[0], m9_state[0]))
+        state_list.append(self.findDistance(player_state[1], m9_state[1]))
+        state_list.append(self.findDistance(player_state[0], m10_state[0]))
+        state_list.append(self.findDistance(player_state[1], m10_state[1]))
+        '''
         state_list.append(self.findDistance(player_state[0], point_state[0]))
         state_list.append(self.findDistance(player_state[1], point_state[1]))
-
+        state_list.append(self.findDistance(player_state[0], point2_state[0]))
+        state_list.append(self.findDistance(player_state[1], point2_state[1]))
+        state_list.append(self.findDistance(player_state[0], point3_state[0]))
+        state_list.append(self.findDistance(player_state[1], point3_state[1]))
+        '''
 
         return [state_list]
     
@@ -356,7 +535,7 @@ class Env(pygame.sprite.Sprite):
         running = True
         batch_size = 0
         while running:
-            self.reward = 10
+            self.reward = 2
             
             clock.tick(FPS)
             
@@ -371,22 +550,23 @@ class Env(pygame.sprite.Sprite):
             
             hits = pygame.sprite.spritecollide(self.player,self.enemy,False , pygame.sprite.collide_circle)
             if hits:
-                self.reward = -150
-                self.total_reward += self.reward
+                self.reward = -500
+                self.total_reward += self.reward                
                 self.done = False
                 running = False
                 print("Total reward: ",self.total_reward)
                 
+                
+        
+            ''' 
             touch = pygame.sprite.spritecollide(self.player,self.points, False , pygame.sprite.collide_circle)
             if touch:
-                self.reward = 100
+                self.reward = 0
                 self.total_reward += self.reward
-                self.done = True
-                running = True
+                self.done = False
+                running = False
                 print("Total reward: ",self.total_reward)
-                                
-                
-                
+            '''
             #storage
             self.agent.remember(state, action, self.reward, next_state, self.done)
             
@@ -404,6 +584,8 @@ class Env(pygame.sprite.Sprite):
             self.all_sprite.draw(screen)
             #after drawing flip display
             pygame.display.flip()
+
+
             
             
                 
@@ -425,16 +607,24 @@ if __name__ =="__main__":
         clock = pygame.time.Clock()
         
         env.run()
-        
+
     
         
         
         
 
         
+import tensorflow as tf
+import keras
+
+print(tf.__version__)
+print(keras.__version__)
         
         
         
+config = tf.compat.v1.ConfigProto()
+config.gpu_options.allow_growth = True
+session = tf.compat.v1.Session(config=config)
         
         
         
